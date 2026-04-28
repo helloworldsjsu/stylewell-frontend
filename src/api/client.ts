@@ -68,7 +68,7 @@ function toClothingItems(rawItems: any[]): ClothingItem[] {
 }
 
 
-export async function getKimiScraperRecommendations(params: {
+export async function getGemmaScraperRecommendations(params: {
   userPrompt?: string;
   occasion: string;
   gender?: string;
@@ -98,7 +98,7 @@ export async function getKimiScraperRecommendations(params: {
       global_count?: number;
       preferred?: boolean;
     }>;
-    source?: 'kimi' | 'fallback';
+    source?: 'gemma' | 'fallback';
     target_category?: 'topwear' | 'bottomwear' | 'both';
     style_direction?: string;
     occasion_bucket?: string;
@@ -146,7 +146,7 @@ export async function getKimiScraperRecommendations(params: {
           },
           {
             retries: 0,
-            operationName: 'check Kimi backend readiness',
+            operationName: 'check Gemma backend readiness',
           },
         );
 
@@ -159,7 +159,7 @@ export async function getKimiScraperRecommendations(params: {
           configuredText === 'yes';
 
         if (!isConfigured) {
-          throw new Error('Kimi backend is not configured. NVIDIA_API_KEY is missing or unavailable on the hosted backend.');
+          throw new Error('Gemma backend is not configured. NVIDIA_API_KEY is missing or unavailable on the hosted backend.');
         }
       } catch (healthError) {
         if (healthError instanceof Error && /not configured|nvidia_api_key/i.test(healthError.message)) {
@@ -169,15 +169,15 @@ export async function getKimiScraperRecommendations(params: {
 
       const liveResponse = await requestScraperWithRouteFallback(payload);
       const planSource = (liveResponse.query_plan as any)?.source;
-      if (planSource && planSource !== 'kimi') {
+      if (planSource && planSource !== 'gemma') {
         const plannerReason = String(
           liveResponse.plan_error ??
             (liveResponse.query_plan as any)?.reason ??
             liveResponse.scrape_error ??
-            'Kimi planner unavailable.',
+            'Gemma planner unavailable.',
         ).trim();
         throw new Error(
-          `Kimi planner was unavailable for this request. ${plannerReason} Non-Kimi fallback products are hidden by policy.`,
+          `Gemma planner was unavailable for this request. ${plannerReason} Non-Gemma fallback products are hidden by policy.`,
         );
       }
 
@@ -218,9 +218,9 @@ export async function getKimiScraperRecommendations(params: {
           : [],
       };
     }
-    throw new Error('Kimi product feed is available only in live API mode.');
+    throw new Error('Gemma product feed is available only in live API mode.');
   } catch (error) {
-    throw new Error(toUserFacingApiMessage(error, 'Failed to fetch Kimi-powered scraper recommendations'));
+    throw new Error(toUserFacingApiMessage(error, 'Failed to fetch Gemma-powered scraper recommendations'));
   }
 }
 function normalizeTerm(value: string): string {
@@ -269,7 +269,7 @@ async function requestScraperWithRouteFallback(
         },
         {
           retries: 1,
-          operationName: 'fetch Kimi-powered scraper recommendations',
+          operationName: 'fetch Gemma-powered scraper recommendations',
         },
       );
     } catch (error) {
@@ -281,7 +281,7 @@ async function requestScraperWithRouteFallback(
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('Failed to fetch Kimi-powered scraper recommendations');
+  throw lastError instanceof Error ? lastError : new Error('Failed to fetch Gemma-powered scraper recommendations');
 }
 
 async function requestSuggestionsWithRouteFallback(

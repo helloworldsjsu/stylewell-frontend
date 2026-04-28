@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Loader2, Search, Sparkles } from 'lucide-react';
-import { getKimiScraperRecommendations, getWardrobeItems } from '../api/client';
+import { getGemmaScraperRecommendations, getWardrobeItems } from '../api/client';
 import { inferWardrobeSlot } from '../lib/wardrobeSlots';
 
 interface RawWardrobeItem {
@@ -18,21 +18,11 @@ interface ScraperProductView {
 }
 
 const EXAMPLE_PROMPTS = [
-  'Need formal topwear for office meetings. Prefer navy, charcoal, and clean minimal styling.',
-  'Suggest versatile bottomwear for daily use. I prefer comfortable fit, neutral shades, and easy pairing.',
-  'Find smart-casual layers for evening outings. Keep it polished, breathable, and weather-appropriate.',
-  'Need interview-ready outfits with solid colors, no loud prints, and a tailored fit.',
-  'Suggest date-night looks in dark tones with a sharp silhouette and minimal accessories.',
-  'Find breathable summer outfits in cotton or linen, light colors, and relaxed comfort.',
-  'Recommend winter layering pieces that work with my current wardrobe and look sleek.',
-  'Need weekend casual fits with sneakers, simple patterns, and easy mix-and-match options.',
-  'Suggest wedding guest outfits with elegant colors and a polished, premium look.',
-  'Find office-casual looks that are comfortable for all-day wear and commute friendly.',
-  'Recommend travel-friendly outfits that are wrinkle-resistant and lightweight.',
-  'Need budget-friendly essentials under a moderate price range with good versatility.',
-  'Suggest streetwear-inspired combinations with neutral bases and one standout piece.',
-  'Find monochrome outfits in black, grey, and white with clean modern styling.',
-  'Recommend festive outfits with richer colors while avoiding flashy or oversized designs.',
+  'Need a formal office shirt in navy or charcoal with a structured fit and minimal styling. Avoid oversized cuts.',
+  'Looking for casual daily trousers in beige, olive, or black with a comfortable straight fit. Avoid ripped or distressed styles.',
+  'Need a party jacket for evening outings in black or charcoal with a smart polished look. Avoid hoodies.',
+  'Looking for gym shorts in black, grey, or navy with a lightweight breathable feel. Avoid loud prints.',
+  'Need a casual weekend polo in white, beige, or olive with a clean minimal style. Avoid athleisure-heavy designs.',
 ];
 
 export function Suggestions() {
@@ -88,7 +78,7 @@ export function Suggestions() {
       setScraperUrls([]);
       setScraperProducts([]);
 
-      const response = await getKimiScraperRecommendations({
+      const response = await getGemmaScraperRecommendations({
         userPrompt: prompt,
         occasion: 'auto',
         gender: selectedGender,
@@ -99,12 +89,12 @@ export function Suggestions() {
       setScraperProducts(Array.isArray(response.products) ? (response.products as ScraperProductView[]) : []);
 
       if (!Array.isArray(response.search_urls) || response.search_urls.length === 0) {
-        setNotice('Kimi generated a plan, but no search URLs were returned for this request.');
+        setNotice('Gemma generated a plan, but no search URLs were returned for this request.');
       } else if (!Array.isArray(response.products) || response.products.length === 0) {
         setNotice('Search URLs were generated, but scraping did not return products for this request.');
       }
     } catch (requestError: unknown) {
-      const message = requestError instanceof Error ? requestError.message : 'Failed to generate Kimi search URLs';
+      const message = requestError instanceof Error ? requestError.message : 'Failed to generate Gemma search URLs';
       setError(message);
       setScraperUrls([]);
       setScraperProducts([]);
@@ -141,10 +131,10 @@ export function Suggestions() {
                 id="request-text"
                 value={requestText}
                 onChange={(event) => setRequestText(event.target.value)}
-                placeholder="Example: Need formal topwear for client meetings. Prefer structured fit, neutral colors, and avoid loud prints."
+                placeholder="Example: Need a formal office shirt in navy or charcoal with a structured fit. Avoid oversized or loud prints."
                 className="min-h-[132px] w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
-              <p className="mt-2 text-xs text-slate-500">Include occasion, color preference, fit, climate, and any avoid constraints for more accurate planning.</p>
+              <p className="mt-2 text-xs text-slate-500">For best results, mention one clear item type like shirt, jacket, trousers, joggers, or shorts, plus occasion, colors, fit, and any avoid constraints.</p>
             </div>
 
             <div className="space-y-4">
@@ -260,7 +250,7 @@ export function Suggestions() {
       {!loading && scraperUrls.length === 0 && scraperProducts.length === 0 && !error && !notice && (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
           <Search className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-          <p className="text-slate-600">Describe your style, occasion, and constraints to generate store search URLs.</p>
+          <p className="text-slate-600">Describe a specific item type, occasion, colors, fit, and avoid constraints to generate better store search URLs.</p>
         </div>
       )}
     </div>
