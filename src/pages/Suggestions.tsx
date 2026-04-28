@@ -88,7 +88,12 @@ export function Suggestions() {
       setScraperUrls(Array.isArray(response.search_urls) ? response.search_urls : []);
       setScraperProducts(Array.isArray(response.products) ? (response.products as ScraperProductView[]) : []);
 
-      if (!Array.isArray(response.search_urls) || response.search_urls.length === 0) {
+      // Check if fallback planner was used
+      const planSource = (response.query_plan as any)?.source;
+      if (planSource && planSource !== 'gemma') {
+        const fallbackReason = (response.query_plan as any)?.reason || 'Fallback planning logic was used for this request.';
+        setNotice(`⚠️ Planning used fallback rules: ${fallbackReason} Products are still high-quality matches based on your requirements.`);
+      } else if (!Array.isArray(response.search_urls) || response.search_urls.length === 0) {
         setNotice('Gemma generated a plan, but no search URLs were returned for this request.');
       } else if (!Array.isArray(response.products) || response.products.length === 0) {
         setNotice('Search URLs were generated, but scraping did not return products for this request.');

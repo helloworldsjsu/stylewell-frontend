@@ -169,6 +169,8 @@ export async function getGemmaScraperRecommendations(params: {
 
       const liveResponse = await requestScraperWithRouteFallback(payload);
       const planSource = (liveResponse.query_plan as any)?.source;
+      
+      // Log fallback usage for debugging
       if (planSource && planSource !== 'gemma') {
         const plannerReason = String(
           liveResponse.plan_error ??
@@ -176,9 +178,9 @@ export async function getGemmaScraperRecommendations(params: {
             liveResponse.scrape_error ??
             'Gemma planner unavailable.',
         ).trim();
-        throw new Error(
-          `Gemma planner was unavailable for this request. ${plannerReason} Non-Gemma fallback products are hidden by policy.`,
-        );
+        console.warn(`[Scraper] Fallback planner used: ${plannerReason}`);
+        // Continue with fallback results instead of rejecting them
+        // This ensures users get recommendations even if NVIDIA_API_KEY is not configured
       }
 
       return {
