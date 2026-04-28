@@ -146,7 +146,7 @@ export async function getGemmaScraperRecommendations(params: {
           },
           {
             retries: 0,
-            operationName: 'check Gemma backend readiness',
+            operationName: 'check backend readiness',
           },
         );
 
@@ -159,7 +159,7 @@ export async function getGemmaScraperRecommendations(params: {
           configuredText === 'yes';
 
         if (!isConfigured) {
-          throw new Error('Gemma backend is not configured. NVIDIA_API_KEY is missing or unavailable on the hosted backend.');
+          throw new Error('Backend is not configured. Required API keys are missing or unavailable on the hosted backend.');
         }
       } catch (healthError) {
         if (healthError instanceof Error && /not configured|nvidia_api_key/i.test(healthError.message)) {
@@ -176,7 +176,7 @@ export async function getGemmaScraperRecommendations(params: {
           liveResponse.plan_error ??
             (liveResponse.query_plan as any)?.reason ??
             liveResponse.scrape_error ??
-            'Gemma planner unavailable.',
+            'Model unavailable.',
         ).trim();
         console.warn(`[Scraper] Fallback planner used: ${plannerReason}`);
         // Continue with fallback results instead of rejecting them
@@ -220,9 +220,9 @@ export async function getGemmaScraperRecommendations(params: {
           : [],
       };
     }
-    throw new Error('Gemma product feed is available only in live API mode.');
+    throw new Error('Product feed is available only in live API mode.');
   } catch (error) {
-    throw new Error(toUserFacingApiMessage(error, 'Failed to fetch Gemma-powered scraper recommendations'));
+    throw new Error(toUserFacingApiMessage(error, 'Failed to fetch scraper recommendations'));
   }
 }
 function normalizeTerm(value: string): string {
@@ -271,7 +271,7 @@ async function requestScraperWithRouteFallback(
         },
         {
           retries: 1,
-          operationName: 'fetch Gemma-powered scraper recommendations',
+          operationName: 'fetch scraper recommendations',
         },
       );
     } catch (error) {
@@ -283,7 +283,7 @@ async function requestScraperWithRouteFallback(
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('Failed to fetch Gemma-powered scraper recommendations');
+  throw lastError instanceof Error ? lastError : new Error('Failed to fetch scraper recommendations');
 }
 
 async function requestSuggestionsWithRouteFallback(

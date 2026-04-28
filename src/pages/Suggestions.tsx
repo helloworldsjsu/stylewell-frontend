@@ -88,18 +88,13 @@ export function Suggestions() {
       setScraperUrls(Array.isArray(response.search_urls) ? response.search_urls : []);
       setScraperProducts(Array.isArray(response.products) ? (response.products as ScraperProductView[]) : []);
 
-      // Check if fallback planner was used
-      const planSource = (response.query_plan as any)?.source;
-      if (planSource && planSource !== 'gemma') {
-        const fallbackReason = (response.query_plan as any)?.reason || 'Fallback planning logic was used for this request.';
-        setNotice(`⚠️ Planning used fallback rules: ${fallbackReason} Products are still high-quality matches based on your requirements.`);
-      } else if (!Array.isArray(response.search_urls) || response.search_urls.length === 0) {
-        setNotice('Gemma generated a plan, but no search URLs were returned for this request.');
+      if (!Array.isArray(response.search_urls) || response.search_urls.length === 0) {
+        setNotice('Model generated a plan, but no search URLs were returned for this request.');
       } else if (!Array.isArray(response.products) || response.products.length === 0) {
         setNotice('Search URLs were generated, but scraping did not return products for this request.');
       }
     } catch (requestError: unknown) {
-      const message = requestError instanceof Error ? requestError.message : 'Failed to generate Gemma search URLs';
+      const message = requestError instanceof Error ? requestError.message : 'Failed to generate search URLs';
       setError(message);
       setScraperUrls([]);
       setScraperProducts([]);
@@ -112,7 +107,7 @@ export function Suggestions() {
     <div className="space-y-8 pb-10">
       <header className="space-y-2">
         <h1 className="text-3xl font-bold text-slate-900">Shopping Suggestions</h1>
-        <p className="text-sm text-slate-600">Describe your requirement naturally. The planner will use wardrobe context, occasion, fit preferences, and the store you select.</p>
+        <p className="text-sm text-slate-600">Describe your requirement naturally. The model will use wardrobe context, occasion, fit preferences, and the store you select.</p>
       </header>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -122,7 +117,7 @@ export function Suggestions() {
               <Sparkles className="mt-0.5 h-4 w-4 text-amber-500" />
               <div className="space-y-1">
                 <p>Wardrobe loaded: {wardrobeCount.total} items, {wardrobeCount.tops} tops, {wardrobeCount.bottoms} bottoms, {wardrobeCount.others} others.</p>
-                <p>Results will follow the selected store and the backend planner.</p>
+                <p>Results will follow the selected store and the backend model.</p>
               </div>
             </div>
           </div>
@@ -210,7 +205,7 @@ export function Suggestions() {
       {loading && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-14">
           <Loader2 className="mb-4 h-10 w-10 animate-spin text-slate-700" />
-          <p className="text-sm text-slate-600">The planner is extracting intent and generating a store for you...</p>
+          <p className="text-sm text-slate-600">The model is extracting intent and generating a store for you...</p>
         </div>
       )}
 
