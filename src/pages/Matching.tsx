@@ -70,7 +70,6 @@ export function Matching() {
     lockOther,
     fetchWardrobe,
     findOutfits,
-    saveOutfit,
     clearRecommendations,
   } = useOutfitStore();
 
@@ -197,7 +196,6 @@ export function Matching() {
                     key={`${outfit.top?.id ?? 'no-top'}-${outfit.bottom?.id ?? 'no-bottom'}-${outfit.other?.id ?? 'no-other'}-${index}`}
                     outfit={outfit}
                     rank={index + 1}
-                    onSave={() => saveOutfit(outfit)}
                   />
                 ))}
               </div>
