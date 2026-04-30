@@ -1,8 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Zap, Sparkles, LogOut, ShoppingBag } from 'lucide-react';
-import logoImg from '../../assets/logo.png';
-import logoNameImg from '../../assets/logon.png';
+import logoImg from '../../assets/logoo.png';
 import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
@@ -51,8 +50,7 @@ export function Layout({ children }: LayoutProps) {
                 onClick={handleLogoClick}
                 className="flex items-center gap-3 rounded-lg focus:outline-none"
               >
-                <img src={logoImg} alt="DressSense" className="w-12 h-12" />
-                <img src={logoNameImg} alt="DressSense" className="h-8 w-auto" />
+                <img src={logoImg} alt="DressSense" className="h-12 w-auto" />
               </button>
 
               <div className="hidden md:flex items-center gap-1">
