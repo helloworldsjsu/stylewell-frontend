@@ -6,6 +6,7 @@ import { saveOutfitHistoryRecord } from '../lib/supabase';
 import { inferWardrobeSlot } from '../lib/wardrobeSlots';
 import type { ClothingItem, ScoredOutfit, ShoppingSuggestion } from '../types/wardrobe';
 import {
+  clearMatchingCacheStorage,
   buildCacheKey,
   buildGlobalWardrobeHash,
   buildLockSignature,
@@ -42,6 +43,7 @@ interface OutfitStore {
   getOccasionOutfit: () => Promise<void>;
   saveOutfit: (outfit: ScoredOutfit) => Promise<void>;
   clearRecommendations: () => void;
+  clearMatchingCache: () => void;
 }
 
 export const useOutfitStore = create<OutfitStore>((set, get) => ({
@@ -270,5 +272,10 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
       lockedBottom: null,
       lockedOther: null,
     });
+  },
+
+  clearMatchingCache: () => {
+    outfitCache.clear();
+    clearMatchingCacheStorage();
   },
 }));

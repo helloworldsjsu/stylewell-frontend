@@ -71,6 +71,7 @@ export function Matching() {
     fetchWardrobe,
     findOutfits,
     clearRecommendations,
+    clearMatchingCache,
   } = useOutfitStore();
 
   useEffect(() => {
@@ -125,7 +126,7 @@ export function Matching() {
         />
       </section>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button
           type="button"
           onClick={() => {
@@ -143,6 +144,13 @@ export function Matching() {
           className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
         >
           Clear Selection
+        </button>
+        <button
+          type="button"
+          onClick={clearMatchingCache}
+          className="rounded-xl border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
+        >
+          Clear Cache
         </button>
       </div>
     </div>

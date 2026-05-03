@@ -131,6 +131,18 @@ export function persistCacheToStorage(cache: Map<string, MatchingResponse>): voi
   }
 }
 
+export function clearMatchingCacheStorage(): void {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(CACHE_STORAGE_KEY);
+  } catch {
+    // Ignore storage clear failures and continue with in-memory cache only.
+  }
+}
+
 export function readCachedMatching(cache: Map<string, MatchingResponse>, cacheKey: string): MatchingResponse | null {
   return cache.get(cacheKey) ?? null;
 }
