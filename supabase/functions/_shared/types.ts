@@ -9,6 +9,7 @@ export interface ClothingItem {
   type: 'topwear' | 'bottomwear' | string;
   confidence_score?: number | null;
   created_at?: string;
+  occasion?: string | null;
 }
 
 export interface Weights {

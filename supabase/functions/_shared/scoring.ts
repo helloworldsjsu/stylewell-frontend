@@ -159,13 +159,61 @@ export function styleSimilarityScore(top: ClothingItem, bottom: ClothingItem): n
 }
 
 export function occasionFitScore(top: ClothingItem, bottom: ClothingItem, occasion: string): number {
-  const occasionKey = normalize(occasion) || 'casual';
-  const scores = OCCASION_CATEGORY_SCORES[occasionKey] ?? OCCASION_CATEGORY_SCORES.casual;
+  const requestedOccasion = normalize(occasion) || 'casual';
+  const scores = OCCASION_CATEGORY_SCORES[requestedOccasion] ?? OCCASION_CATEGORY_SCORES.casual;
 
-  const topScore = scores[normalize(top.category)] ?? 50;
-  const bottomScore = scores[normalize(bottom.category)] ?? 50;
+  let topScore = scores[normalize(top.category)] ?? 50;
+  let bottomScore = scores[normalize(bottom.category)] ?? 50;
+
+  // Apply penalty if item's stored occasion doesn't match requested occasion
+  const topStoredOccasion = normalize(top.occasion);
+  const bottomStoredOccasion = normalize(bottom.occasion);
+
+  if (topStoredOccasion && !isOccasionCompatible(topStoredOccasion, requestedOccasion)) {
+    topScore = Math.max(5, topScore * 0.3); // Heavily penalize mismatched occasions
+  }
+
+  if (bottomStoredOccasion && !isOccasionCompatible(bottomStoredOccasion, requestedOccasion)) {
+    bottomScore = Math.max(5, bottomScore * 0.3); // Heavily penalize mismatched occasions
+  }
 
   return (topScore + bottomScore) / 2;
+}
+
+function isOccasionCompatible(itemOccasion: string, requestedOccasion: string): boolean {
+  if (!itemOccasion || !requestedOccasion) return true;
+
+  // Normalize occasion strings - handle cases like "Work/Formal" or "Casual"
+  const item = itemOccasion.toLowerCase();
+  const requested = requestedOccasion.toLowerCase();
+
+  // Direct match
+  if (item === requested || item.includes(requested) || requested.includes(item)) {
+    return true;
+  }
+
+  // Compatible groups
+  const formalGroup = ['formal', 'work', 'interview', 'wedding'];
+  const casualGroup = ['casual', 'everyday'];
+  const partyGroup = ['party', 'evening', 'night'];
+
+  const itemInFormal = formalGroup.some(occ => item.includes(occ));
+  const requestedInFormal = formalGroup.some(occ => requested.includes(occ));
+
+  const itemInCasual = casualGroup.some(occ => item.includes(occ));
+  const requestedInCasual = casualGroup.some(occ => requested.includes(occ));
+
+  const itemInParty = partyGroup.some(occ => item.includes(occ));
+  const requestedInParty = partyGroup.some(occ => requested.includes(occ));
+
+  // Both in same group = compatible
+  if ((itemInFormal && requestedInFormal) ||
+      (itemInCasual && requestedInCasual) ||
+      (itemInParty && requestedInParty)) {
+    return true;
+  }
+
+  return false;
 }
 
 export function getWeights(occasion?: string, hasLockedItem?: boolean): Weights {

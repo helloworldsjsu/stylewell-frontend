@@ -13,17 +13,30 @@ function scenarioLabel(occasion?: string, lockedTop?: ClothingItem | null, locke
 }
 
 function normalizeItem(item: any): ClothingItem {
+  // Extract description field which may contain occasion info
+  let description: any = {};
+  if (typeof item.description === 'string') {
+    try {
+      description = JSON.parse(item.description);
+    } catch {
+      description = {};
+    }
+  } else if (item.description && typeof item.description === 'object') {
+    description = item.description;
+  }
+
   return {
     id: item.id,
     user_id: item.user_id,
     image_url: item.image_url,
-    category: item.category,
-    color: item.color,
-    pattern: item.pattern,
-    sleeve_type: item.sleeve_type,
-    type: item.type,
-    confidence_score: item.confidence_score,
+    category: item.category || description.category,
+    color: item.color || description.color,
+    pattern: item.pattern || description.pattern,
+    sleeve_type: item.sleeve_type || description.sleeve_type,
+    type: item.type || item.item_type || description.type,
+    confidence_score: item.confidence_score || item.confidence,
     created_at: item.created_at,
+    occasion: description.occasion || null,
   };
 }
 
