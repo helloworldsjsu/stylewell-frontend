@@ -63,6 +63,7 @@ function toClothingItems(rawItems: any[]): ClothingItem[] {
       sleeve_type: description?.sleeve_type,
       type: inferWardrobeSlot(description?.type, description?.category),
       created_at: item.created_at,
+      occasion: description?.occasion ?? null,
     };
   });
 }

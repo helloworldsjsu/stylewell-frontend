@@ -38,6 +38,7 @@ export interface ClothingItem {
   confidence_score?: number | null;
   created_at?: string;
   updated_at?: string;
+  occasion?: string | null;
 }
 
 export interface OutfitBreakdown {

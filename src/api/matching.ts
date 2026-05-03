@@ -71,6 +71,7 @@ function toClothingItems(rawItems: any[]): ClothingItem[] {
       type: inferWardrobeSlot(description?.type, category),
       created_at: item.created_at,
       updated_at: item.updated_at ?? item.created_at,
+      occasion: description?.occasion ?? null,
     };
   });
 }
@@ -83,6 +84,15 @@ export interface MatchingWardrobeContext {
 export async function getMatchingWardrobeContext(): Promise<MatchingWardrobeContext> {
   const response = await getWardrobeItems();
   const wardrobe = normalizeWardrobeForRecommendation(toClothingItems(response.items ?? []));
+
+  // Debug logging to verify occasion data is extracted
+  console.log('[Wardrobe Context] Loaded items with occasions:');
+  wardrobe.forEach(item => {
+    if (item.occasion) {
+      console.log(`  - ${item.color} ${item.category} (${item.type}): occasion = "${item.occasion}"`);
+    }
+  });
+
   const userId = wardrobe.find((item) => typeof item.user_id === 'string' && item.user_id.trim().length > 0)?.user_id;
   return {
     wardrobe,
@@ -94,16 +104,66 @@ function normalizedColor(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function isOccasionCompatible(itemOccasion: string | null | undefined, requestedOccasion: string): boolean {
+  if (!itemOccasion || !requestedOccasion) return true;
+
+  const item = itemOccasion.toLowerCase().trim();
+  const requested = requestedOccasion.toLowerCase().trim();
+
+  // Direct match
+  if (item === requested || item.includes(requested) || requested.includes(item)) {
+    return true;
+  }
+
+  // Compatible groups
+  const formalGroup = ['formal', 'work', 'interview', 'wedding'];
+  const casualGroup = ['casual', 'everyday'];
+  const partyGroup = ['party', 'evening', 'night'];
+
+  const itemInFormal = formalGroup.some(occ => item.includes(occ));
+  const requestedInFormal = formalGroup.some(occ => requested.includes(occ));
+
+  const itemInCasual = casualGroup.some(occ => item.includes(occ));
+  const requestedInCasual = casualGroup.some(occ => requested.includes(occ));
+
+  const itemInParty = partyGroup.some(occ => item.includes(occ));
+  const requestedInParty = partyGroup.some(occ => requested.includes(occ));
+
+  // Both in same group = compatible
+  return (itemInFormal && requestedInFormal) ||
+         (itemInCasual && requestedInCasual) ||
+         (itemInParty && requestedInParty);
+}
+
 function occasionScore(occasion: string | undefined, top: ClothingItem, bottom: ClothingItem): number {
-  const normalizedOccasion = (occasion ?? 'casual').toLowerCase();
+  const requestedOccasion = (occasion ?? 'casual').toLowerCase();
   const formalBoost = /(blazer|shirt|trouser|pant)/.test(`${top.category} ${bottom.category}`.toLowerCase());
-  if (normalizedOccasion === 'formal' || normalizedOccasion === 'interview' || normalizedOccasion === 'wedding') {
-    return formalBoost ? 85 : 62;
+
+  let baseScore = 74;
+  if (requestedOccasion === 'formal' || requestedOccasion === 'interview' || requestedOccasion === 'wedding') {
+    baseScore = formalBoost ? 85 : 62;
+  } else if (requestedOccasion === 'party') {
+    baseScore = 78;
   }
-  if (normalizedOccasion === 'party') {
-    return 78;
+
+  // Apply heavy penalty if item's stored occasion doesn't match requested occasion
+  const topCompatible = isOccasionCompatible(top.occasion, requestedOccasion);
+  const bottomCompatible = isOccasionCompatible(bottom.occasion, requestedOccasion);
+
+  // Debug logging
+  if (!topCompatible || !bottomCompatible) {
+    console.log(`[Occasion Mismatch] Requested: ${requestedOccasion}`);
+    console.log(`  Top: ${top.color} ${top.category} (occasion: ${top.occasion}) - Compatible: ${topCompatible}`);
+    console.log(`  Bottom: ${bottom.color} ${bottom.category} (occasion: ${bottom.occasion}) - Compatible: ${bottomCompatible}`);
+    console.log(`  Base score: ${baseScore}, Penalized score: ${Math.max(5, baseScore * 0.25)}`);
   }
-  return 74;
+
+  // If either item is incompatible, severely reduce the score
+  if (!topCompatible || !bottomCompatible) {
+    return Math.max(5, baseScore * 0.25); // 75% penalty for mismatched occasions
+  }
+
+  return baseScore;
 }
 
 function colorScore(top: ClothingItem, bottom: ClothingItem): number {

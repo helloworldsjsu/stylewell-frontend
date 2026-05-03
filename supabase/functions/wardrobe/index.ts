@@ -105,7 +105,7 @@ Deno.serve(async (req: Request) => {
 
       if (itemId) {
         const { data, error } = await supabase
-          .from('clothing_items')
+          .from('garment_items')
           .select('*')
           .eq('id', itemId)
           .eq('user_id', user.id)
@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
         );
       } else {
         const { data, error } = await supabase
-          .from('clothing_items')
+          .from('garment_items')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
@@ -164,7 +164,7 @@ Deno.serve(async (req: Request) => {
         .getPublicUrl(fileName);
 
       const { data: itemData, error: insertError } = await supabase
-        .from('clothing_items')
+        .from('garment_items')
         .insert({
           user_id: user.id,
           category: classification.category,
@@ -206,7 +206,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const { data: item } = await supabase
-        .from('clothing_items')
+        .from('garment_items')
         .select('image_url')
         .eq('id', itemId)
         .eq('user_id', user.id)
@@ -219,7 +219,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const { error: deleteError } = await supabase
-        .from('clothing_items')
+        .from('garment_items')
         .delete()
         .eq('id', itemId)
         .eq('user_id', user.id);

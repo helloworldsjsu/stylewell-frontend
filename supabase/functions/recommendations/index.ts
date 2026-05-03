@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const { data: wardrobe, error } = await supabase
-        .from('clothing_items')
+        .from('garment_items')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
