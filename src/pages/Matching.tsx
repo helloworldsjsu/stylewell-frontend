@@ -34,8 +34,8 @@ function ScenarioBadge({
 
 function LoadingSkeletons() {
   return (
-    <div className="space-y-4">
-      {[1, 2, 3].map((id) => (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((id) => (
         <div key={id} className="animate-pulse rounded-2xl border border-slate-200 bg-white p-4">
           <div className="mb-3 h-5 w-24 rounded bg-slate-200" />
           <div className="grid grid-cols-2 gap-3">
@@ -76,7 +76,8 @@ export function Matching() {
 
   useEffect(() => {
     fetchWardrobe();
-  }, [fetchWardrobe]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const tops = wardrobe.filter((item) => getItemSlot(item) === 'topwear');
   const bottoms = wardrobe.filter((item) => getItemSlot(item) === 'bottomwear');
@@ -95,6 +96,34 @@ export function Matching() {
           Reset to Casual
         </button>
       </section>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            findOutfits();
+            setMobileDrawerOpen(false);
+          }}
+          disabled={isLoading || !canRecommend}
+          className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          Find Outfits
+        </button>
+        <button
+          type="button"
+          onClick={clearRecommendations}
+          className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+        >
+          Clear Selection
+        </button>
+        <button
+          type="button"
+          onClick={clearMatchingCache}
+          className="rounded-xl border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
+        >
+          Clear Cache
+        </button>
+      </div>
 
       <section className="space-y-2">
         <h3 className="text-sm font-semibold text-slate-900">Lock a top? (optional)</h3>
@@ -125,34 +154,6 @@ export function Matching() {
           onSelect={(item) => lockOther(lockedOther?.id === item.id ? null : item)}
         />
       </section>
-
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            findOutfits();
-            setMobileDrawerOpen(false);
-          }}
-          disabled={isLoading || !canRecommend}
-          className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
-          Find Outfits
-        </button>
-        <button
-          type="button"
-          onClick={clearRecommendations}
-          className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-        >
-          Clear Selection
-        </button>
-        <button
-          type="button"
-          onClick={clearMatchingCache}
-          className="rounded-xl border border-amber-300 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-50"
-        >
-          Clear Cache
-        </button>
-      </div>
     </div>
   );
 
@@ -198,7 +199,7 @@ export function Matching() {
                 </div>
               }
             >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {recommendedOutfits.slice(0, MAX_RECOMMENDATIONS).map((outfit, index) => (
                   <OutfitCard
                     key={`${outfit.top?.id ?? 'no-top'}-${outfit.bottom?.id ?? 'no-bottom'}-${outfit.other?.id ?? 'no-other'}-${index}`}

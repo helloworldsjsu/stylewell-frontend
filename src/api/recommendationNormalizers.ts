@@ -1,7 +1,7 @@
 import type { ClothingItem, MatchingResponse, OccasionResponse, ScoredOutfit, ShoppingSuggestion } from '../types/wardrobe';
 import { inferWardrobeSlot } from '../lib/wardrobeSlots';
 
-export const MAX_RECOMMENDATIONS = 4;
+export const MAX_RECOMMENDATIONS = 6;
 
 function toNumber(value: unknown, fallback = 0): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -270,6 +270,7 @@ export function normalizeWardrobeForRecommendation(rawItems: unknown[]): Clothin
       type: inferWardrobeSlot(source.type, description.type, category),
       created_at: safeText(source.created_at, new Date().toISOString()),
       updated_at: safeText(source.updated_at ?? source.created_at, new Date().toISOString()),
+      occasion: optionalText(source.occasion ?? description.occasion) || null,
     } as ClothingItem;
   });
 }

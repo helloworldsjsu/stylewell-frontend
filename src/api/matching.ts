@@ -57,8 +57,30 @@ async function requestRecommendOutfitsWithFallback(
 }
 
 function toClothingItems(rawItems: any[]): ClothingItem[] {
-  return rawItems.map((item: any) => {
-    const description = typeof item.description === 'string' ? JSON.parse(item.description) : item.description ?? {};
+  return rawItems.map((item: any, index: number) => {
+    let description: any = {};
+
+    // Parse description field
+    if (typeof item.description === 'string') {
+      try {
+        description = JSON.parse(item.description);
+      } catch (e) {
+        console.warn('[toClothingItems] Failed to parse description:', item.description, e);
+        description = {};
+      }
+    } else if (item.description && typeof item.description === 'object') {
+      description = item.description;
+    }
+
+    // Debug logging (disabled for production - uncomment if needed)
+    // if (index < 5) {
+    //   console.log(`\n[toClothingItems #${index + 1}] ID: ${item.id}`);
+    //   console.log('  📋 Raw description TYPE:', typeof item.description);
+    //   console.log('  📋 Raw description VALUE:', item.description);
+    //   console.log('  🎯 Parsed occasion:', description?.occasion || '❌ MISSING');
+    //   console.log('  📦 Full parsed description:', description);
+    // }
+
     const category = String(description?.category ?? description?.type ?? 'Unknown');
     return {
       id: item.id,
@@ -85,13 +107,10 @@ export async function getMatchingWardrobeContext(): Promise<MatchingWardrobeCont
   const response = await getWardrobeItems();
   const wardrobe = normalizeWardrobeForRecommendation(toClothingItems(response.items ?? []));
 
-  // Debug logging to verify occasion data is extracted
-  console.log('[Wardrobe Context] Loaded items with occasions:');
-  wardrobe.forEach(item => {
-    if (item.occasion) {
-      console.log(`  - ${item.color} ${item.category} (${item.type}): occasion = "${item.occasion}"`);
-    }
-  });
+  // Debug logging (disabled for production)
+  // console.log('[Wardrobe Context] Total items loaded:', wardrobe.length);
+  // const itemsWithOccasion = wardrobe.filter(item => item.occasion);
+  // console.log(`[Wardrobe Context] ${itemsWithOccasion.length} items have occasion data`);
 
   const userId = wardrobe.find((item) => typeof item.user_id === 'string' && item.user_id.trim().length > 0)?.user_id;
   return {
@@ -137,43 +156,138 @@ function isOccasionCompatible(itemOccasion: string | null | undefined, requested
 
 function occasionScore(occasion: string | undefined, top: ClothingItem, bottom: ClothingItem): number {
   const requestedOccasion = (occasion ?? 'casual').toLowerCase();
-  const formalBoost = /(blazer|shirt|trouser|pant)/.test(`${top.category} ${bottom.category}`.toLowerCase());
+  const combinedCat = `${top.category} ${bottom.category}`.toLowerCase();
+  const formalBoost = /(blazer|shirt|trouser|pant|slack|blouse)/.test(combinedCat);
+  const casualBoost = /(t-shirt|tee|jean|chino)/.test(combinedCat);
+  const ethnicBoost = /(kurta|sherwani|churidar)/.test(combinedCat);
 
-  let baseScore = 74;
+  let baseScore = 70;
+
+  // Formal occasions
   if (requestedOccasion === 'formal' || requestedOccasion === 'interview' || requestedOccasion === 'wedding') {
-    baseScore = formalBoost ? 85 : 62;
-  } else if (requestedOccasion === 'party') {
-    baseScore = 78;
+    if (formalBoost) {
+      baseScore = Math.floor(82 + Math.random() * 12); // 82-93
+    } else if (casualBoost) {
+      baseScore = Math.floor(40 + Math.random() * 15); // 40-54 (too casual)
+    } else {
+      baseScore = Math.floor(60 + Math.random() * 15); // 60-74
+    }
+  }
+  // Party occasions
+  else if (requestedOccasion === 'party' || requestedOccasion === 'evening') {
+    if (ethnicBoost || formalBoost) {
+      baseScore = Math.floor(80 + Math.random() * 12); // 80-91
+    } else if (casualBoost) {
+      baseScore = Math.floor(55 + Math.random() * 15); // 55-69
+    } else {
+      baseScore = Math.floor(72 + Math.random() * 10); // 72-81
+    }
+  }
+  // Casual occasions
+  else {
+    if (casualBoost) {
+      baseScore = Math.floor(78 + Math.random() * 14); // 78-91
+    } else if (formalBoost) {
+      baseScore = Math.floor(65 + Math.random() * 15); // 65-79 (overdressed)
+    } else {
+      baseScore = Math.floor(70 + Math.random() * 12); // 70-81
+    }
   }
 
   // Apply heavy penalty if item's stored occasion doesn't match requested occasion
   const topCompatible = isOccasionCompatible(top.occasion, requestedOccasion);
   const bottomCompatible = isOccasionCompatible(bottom.occasion, requestedOccasion);
 
-  // Debug logging
-  if (!topCompatible || !bottomCompatible) {
-    console.log(`[Occasion Mismatch] Requested: ${requestedOccasion}`);
-    console.log(`  Top: ${top.color} ${top.category} (occasion: ${top.occasion}) - Compatible: ${topCompatible}`);
-    console.log(`  Bottom: ${bottom.color} ${bottom.category} (occasion: ${bottom.occasion}) - Compatible: ${bottomCompatible}`);
-    console.log(`  Base score: ${baseScore}, Penalized score: ${Math.max(5, baseScore * 0.25)}`);
-  }
-
   // If either item is incompatible, severely reduce the score
   if (!topCompatible || !bottomCompatible) {
-    return Math.max(5, baseScore * 0.25); // 75% penalty for mismatched occasions
+    return Math.max(5, Math.floor(baseScore * 0.25)); // 75% penalty for mismatched occasions
   }
 
   return baseScore;
 }
 
 function colorScore(top: ClothingItem, bottom: ClothingItem): number {
-  const sameColor = normalizedColor(top.color) === normalizedColor(bottom.color);
-  return sameColor ? 82 : 74;
+  const topColor = normalizedColor(top.color);
+  const bottomColor = normalizedColor(bottom.color);
+
+  // Exact match
+  if (topColor === bottomColor) {
+    return Math.floor(80 + Math.random() * 8); // 80-87
+  }
+
+  // Complementary pairs (high scores)
+  const complementaryPairs = [
+    ['white', 'black'], ['black', 'white'],
+    ['navy', 'white'], ['white', 'navy'],
+    ['beige', 'brown'], ['brown', 'beige'],
+    ['grey', 'navy'], ['navy', 'grey'],
+    ['blue', 'white'], ['white', 'blue'],
+  ];
+
+  const isComplementary = complementaryPairs.some(
+    ([c1, c2]) => (topColor.includes(c1) && bottomColor.includes(c2))
+  );
+  if (isComplementary) {
+    return Math.floor(82 + Math.random() * 10); // 82-91
+  }
+
+  // Neutral combinations (medium-high scores)
+  const neutrals = ['white', 'black', 'grey', 'gray', 'beige', 'cream', 'navy'];
+  const topIsNeutral = neutrals.some(n => topColor.includes(n));
+  const bottomIsNeutral = neutrals.some(n => bottomColor.includes(n));
+
+  if (topIsNeutral && bottomIsNeutral) {
+    return Math.floor(75 + Math.random() * 10); // 75-84
+  }
+
+  if (topIsNeutral || bottomIsNeutral) {
+    return Math.floor(70 + Math.random() * 12); // 70-81
+  }
+
+  // Clashing bright colors (low scores)
+  const brightColors = ['red', 'orange', 'yellow', 'green', 'purple', 'pink'];
+  const topIsBright = brightColors.some(b => topColor.includes(b));
+  const bottomIsBright = brightColors.some(b => bottomColor.includes(b));
+
+  if (topIsBright && bottomIsBright && topColor !== bottomColor) {
+    return Math.floor(45 + Math.random() * 20); // 45-64 (potential clash)
+  }
+
+  // Default: average combinations
+  return Math.floor(65 + Math.random() * 12); // 65-76
 }
 
 function styleScore(top: ClothingItem, bottom: ClothingItem): number {
-  const isFormalCombo = /(shirt|blazer)/i.test(top.category) && /(trouser|pant)/i.test(bottom.category);
-  return isFormalCombo ? 88 : 76;
+  const topCat = top.category.toLowerCase();
+  const bottomCat = bottom.category.toLowerCase();
+
+  // Perfect formal pairings
+  if ((/(shirt|blazer|blouse)/.test(topCat)) && (/(trouser|pant|slack)/.test(bottomCat))) {
+    return Math.floor(85 + Math.random() * 10); // 85-94
+  }
+
+  // Perfect casual pairings
+  if ((/(t-shirt|tee|polo)/.test(topCat)) && (/(jean|chino)/.test(bottomCat))) {
+    return Math.floor(80 + Math.random() * 12); // 80-91
+  }
+
+  // Ethnic coordination
+  if ((/(kurta|sherwani)/.test(topCat)) && (/(churidar|pyjama)/.test(bottomCat))) {
+    return Math.floor(88 + Math.random() * 8); // 88-95
+  }
+
+  // Mixed formality (style clash)
+  const topFormal = /(shirt|blazer|blouse)/.test(topCat);
+  const bottomCasual = /(jean|short)/.test(bottomCat);
+  const topCasual = /(t-shirt|tee|hoodie|sweatshirt)/.test(topCat);
+  const bottomFormal = /(trouser|slack)/.test(bottomCat);
+
+  if ((topFormal && bottomCasual) || (topCasual && bottomFormal)) {
+    return Math.floor(55 + Math.random() * 20); // 55-74 (mixed formality)
+  }
+
+  // Default: neutral pairing
+  return Math.floor(70 + Math.random() * 15); // 70-84
 }
 
 function buildReason(top: ClothingItem, bottom: ClothingItem, occasion: string | undefined): string {
@@ -189,10 +303,63 @@ function buildTip(occasion: string | undefined): string {
 
 function standaloneOtherOutfit(other: ClothingItem, occasion: string | undefined) {
   const occasionLower = (occasion ?? 'casual').toLowerCase();
-  const styleBase = /(dress|kurta|jumpsuit|romper|gown)/i.test(other.category) ? 88 : 80;
-  const occasionBase = occasionLower === 'formal' || occasionLower === 'interview' ? 82 : 78;
+  const category = other.category.toLowerCase();
+  const color = other.color.toLowerCase();
+
+  // Color score based on versatility
+  const neutralColors = ['black', 'white', 'grey', 'gray', 'beige', 'navy', 'cream'];
+  const isNeutral = neutralColors.some(n => color.includes(n));
+  const colorScore = isNeutral
+    ? Math.floor(78 + Math.random() * 12) // 78-89 (versatile)
+    : Math.floor(70 + Math.random() * 15); // 70-84 (bold)
+
+  // Style score based on category
+  let styleBase = 75;
+  if (/(dress|gown)/.test(category)) {
+    styleBase = Math.floor(85 + Math.random() * 10); // 85-94 (elegant)
+  } else if (/(kurta|sherwani)/.test(category)) {
+    styleBase = Math.floor(82 + Math.random() * 12); // 82-93 (ethnic elegance)
+  } else if (/(jumpsuit|romper)/.test(category)) {
+    styleBase = Math.floor(78 + Math.random() * 10); // 78-87 (modern)
+  } else {
+    styleBase = Math.floor(70 + Math.random() * 12); // 70-81 (default)
+  }
+
+  // Occasion score
+  let occasionBase = 75;
+  if (occasionLower === 'formal' || occasionLower === 'interview') {
+    if (/(gown|dress)/.test(category) && isNeutral) {
+      occasionBase = Math.floor(85 + Math.random() * 10); // 85-94
+    } else if (/(kurta|sherwani)/.test(category)) {
+      occasionBase = Math.floor(70 + Math.random() * 12); // 70-81 (depends on style)
+    } else {
+      occasionBase = Math.floor(75 + Math.random() * 10); // 75-84
+    }
+  } else if (occasionLower === 'party' || occasionLower === 'evening') {
+    if (/(gown|dress|kurta|sherwani)/.test(category)) {
+      occasionBase = Math.floor(88 + Math.random() * 8); // 88-95 (perfect for parties)
+    } else {
+      occasionBase = Math.floor(78 + Math.random() * 10); // 78-87
+    }
+  } else {
+    // Casual
+    if (/(jumpsuit|romper)/.test(category)) {
+      occasionBase = Math.floor(82 + Math.random() * 10); // 82-91 (great for casual)
+    } else if (/(gown|sherwani)/.test(category)) {
+      occasionBase = Math.floor(55 + Math.random() * 15); // 55-69 (overdressed)
+    } else {
+      occasionBase = Math.floor(72 + Math.random() * 12); // 72-83
+    }
+  }
+
+  // Check if the item's stored occasion is compatible with the requested occasion
+  const isCompatible = isOccasionCompatible(other.occasion, occasionLower);
+  if (!isCompatible) {
+    occasionBase = Math.max(5, Math.floor(occasionBase * 0.25)); // 75% penalty for mismatched occasions
+  }
+
   const breakdown = {
-    color: 80,
+    color: colorScore,
     style: styleBase,
     occasion: occasionBase,
   };
@@ -230,6 +397,7 @@ export async function fetchWardrobeOutfits(params: {
     const wardrobe = wardrobeContext.wardrobe;
 
     if (isLiveApiMode()) {
+      // console.log('[fetchWardrobeOutfits] Using LIVE API mode');
       const topSelected = params.locked_top_id
         ? wardrobe.find((item) => item.id === params.locked_top_id) ?? null
         : null;
@@ -253,9 +421,25 @@ export async function fetchWardrobeOutfits(params: {
         lock_signature: options?.lockSignature,
       };
 
+      // console.log('[fetchWardrobeOutfits] Sending to backend API:', {
+      //   occasion: payload.occasion,
+      //   wardrobe_items_count: wardrobe.length,
+      //   has_occasion_data: wardrobe.filter(i => i.occasion).length,
+      // });
+
       const liveResponse = await requestRecommendOutfitsWithFallback(payload);
 
-      return normalizeMatchingResponse(liveResponse, {
+      // console.log('[fetchWardrobeOutfits] Got backend response:', {
+      //   outfits_count: liveResponse.outfits?.length || 0,
+      //   first_outfit_score: liveResponse.outfits?.[0]?.score,
+      // });
+
+      // If backend returns no outfits, fall back to frontend scoring
+      if (!liveResponse.outfits || liveResponse.outfits.length === 0) {
+        console.warn('[fetchWardrobeOutfits] Backend returned 0 outfits, falling back to frontend scoring');
+        // Continue to frontend scoring below
+      } else {
+        return normalizeMatchingResponse(liveResponse, {
         lockedTopId: params.locked_top_id,
         lockedBottomId: params.locked_bottom_id,
         lockedOtherId: params.locked_other_id,
@@ -276,12 +460,22 @@ export async function fetchWardrobeOutfits(params: {
               image_url: bottomSelected.image_url,
             }
           : null,
-      });
+        });
+      }
     }
+
+    // console.log('[fetchWardrobeOutfits] Using FALLBACK (frontend) scoring');
+    // console.log('[fetchWardrobeOutfits] Requested occasion:', params.occasion || 'casual');
 
     const tops = wardrobe.filter((item) => item.type === 'topwear');
     const bottoms = wardrobe.filter((item) => item.type === 'bottomwear');
     const others = wardrobe.filter((item) => item.type === 'others');
+
+    // console.log('[fetchWardrobeOutfits] Wardrobe breakdown:', {
+    //   tops: tops.length,
+    //   bottoms: bottoms.length,
+    //   others: others.length,
+    // });
 
     const selectedTops = params.locked_top_id ? tops.filter((item) => item.id === params.locked_top_id) : tops;
     const selectedBottoms = params.locked_bottom_id ? bottoms.filter((item) => item.id === params.locked_bottom_id) : bottoms;
@@ -316,7 +510,9 @@ export async function fetchWardrobeOutfits(params: {
             occasion: occasionScore(params.occasion, top, bottom),
           };
           const score = Math.round((breakdown.color + breakdown.style + breakdown.occasion) / 3);
-          return {
+
+          // Log top 5 combinations for debugging
+          const outfit = {
             score,
             breakdown,
             ai_reason: buildReason(top, bottom, params.occasion),
@@ -335,15 +531,25 @@ export async function fetchWardrobeOutfits(params: {
             },
             other: null,
           };
+
+          return outfit;
         }),
       )
       .sort((a, b) => b.score - a.score);
+
+    // console.log('[fetchWardrobeOutfits] Top 5 scored outfits:');
+    // pairOutfits.slice(0, 5).forEach((outfit, idx) => {
+    //   console.log(`  ${idx + 1}. ${outfit.top.color} ${outfit.top.category} + ${outfit.bottom.color} ${outfit.bottom.category}`);
+    //   console.log(`     Score: ${outfit.score} (color: ${outfit.breakdown.color}, style: ${outfit.breakdown.style}, occasion: ${outfit.breakdown.occasion})`);
+    // });
 
     const standaloneOutfits = selectedOthers.map((other) => standaloneOtherOutfit(other, params.occasion));
 
     const outfits = [...pairOutfits, ...standaloneOutfits]
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RECOMMENDATIONS);
+
+    // console.log('[fetchWardrobeOutfits] Final recommendations:', outfits.length);
 
     return normalizeMatchingResponse({
       outfits,

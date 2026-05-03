@@ -46,6 +46,10 @@ interface OutfitStore {
   clearMatchingCache: () => void;
 }
 
+// Request deduplication to prevent concurrent auth calls
+let wardrobeFetchPromise: Promise<any> | null = null;
+let outfitFetchPromise: Promise<void> | null = null;
+
 export const useOutfitStore = create<OutfitStore>((set, get) => ({
   wardrobe: [],
   recommendedOutfits: [],
@@ -73,9 +77,16 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
   })),
 
   fetchWardrobe: async () => {
+    // Deduplicate concurrent requests
+    if (wardrobeFetchPromise) {
+      return wardrobeFetchPromise;
+    }
+
     set({ isLoading: true, error: null });
-    try {
-      const data = await getWardrobeItems();
+
+    wardrobeFetchPromise = (async () => {
+      try {
+        const data = await getWardrobeItems();
       const items = (data.items ?? []).map((item: any) => {
         const description = typeof item.description === 'string' ? JSON.parse(item.description) : item.description ?? {};
         const category = description?.category ?? 'Unknown';
@@ -93,19 +104,32 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
         } as ClothingItem;
       });
 
-      set({ wardrobe: items });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch wardrobe';
-      set({ error: message });
-    } finally {
-      set({ isLoading: false });
-    }
+        set({ wardrobe: items });
+        return data;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch wardrobe';
+        set({ error: message });
+        throw error;
+      } finally {
+        set({ isLoading: false });
+        wardrobeFetchPromise = null;
+      }
+    })();
+
+    return wardrobeFetchPromise;
   },
 
   findOutfits: async () => {
+    // Deduplicate concurrent requests
+    if (outfitFetchPromise) {
+      return outfitFetchPromise;
+    }
+
     const state = get();
     set({ isLoading: true, error: null, shoppingSuggestions: [] });
-    try {
+
+    outfitFetchPromise = (async () => {
+      try {
       const hasLockedSelection = Boolean(state.lockedTop?.id || state.lockedBottom?.id || state.lockedOther?.id);
       const cacheCategory = resolveCacheCategory({
         lockedTopId: state.lockedTop?.id,
@@ -168,15 +192,19 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
         writeCachedMatching(outfitCache, entry.key, response);
       });
 
-      set({
-        recommendedOutfits: response.outfits,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to find outfits';
-      set({ error: message });
-    } finally {
-      set({ isLoading: false });
-    }
+        set({
+          recommendedOutfits: response.outfits,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to find outfits';
+        set({ error: message });
+      } finally {
+        set({ isLoading: false });
+        outfitFetchPromise = null;
+      }
+    })();
+
+    return outfitFetchPromise;
   },
 
   prefetchMatchingForCategory: async (category) => {

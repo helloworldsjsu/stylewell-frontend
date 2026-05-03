@@ -89,7 +89,20 @@ const fallbackSupabase: any = {
 };
 
 const client = hasSupabaseEnv
-  ? createClient(SUPABASE_URL as string, SUPABASE_ANON_KEY as string)
+  ? createClient(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage,
+        flowType: 'pkce',
+      },
+      global: {
+        headers: {
+          'x-client-info': 'stylewell-frontend@1.0.0',
+        },
+      },
+    })
   : fallbackSupabase;
 
 export const supabase: SupabaseLike | any = client;
