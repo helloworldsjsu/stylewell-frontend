@@ -17,16 +17,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const normalizedStartUrls = startUrls
     .map((value: unknown) => {
       if (typeof value === 'string') {
-        const url = value.trim();
-        return url ? { url } : null;
+        return value.trim();
       }
       if (value && typeof value === 'object' && 'url' in value) {
-        const url = String((value as { url?: unknown }).url ?? '').trim();
-        return url ? { ...(value as Record<string, unknown>), url } : null;
+        return String((value as { url?: unknown }).url ?? '').trim();
       }
-      return null;
+      return '';
     })
-    .filter((value): value is { url: string } => Boolean(value));
+    .filter((value): value is string => Boolean(value));
 
   if (normalizedStartUrls.length === 0) {
     return res.status(400).json({ error: 'startUrls must contain at least one valid URL' });
