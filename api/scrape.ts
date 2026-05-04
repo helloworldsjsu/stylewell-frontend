@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          startUrls: startUrls.map((url: string) => ({ url })),
+          startUrls: startUrls,
           maxRequestRetries: 3,
           maxConcurrency: 4,
           maxResults: Number(maxResults),
