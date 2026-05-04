@@ -99,7 +99,7 @@ export async function getGemmaScraperRecommendations(params: {
       global_count?: number;
       preferred?: boolean;
     }>;
-    source?: 'gemma' | 'fallback';
+    source?: 'gemma' | 'nemotron' | 'fallback';
     target_category?: 'topwear' | 'bottomwear' | 'both';
     style_direction?: string;
     occasion_bucket?: string;
@@ -172,7 +172,7 @@ export async function getGemmaScraperRecommendations(params: {
       const planSource = (liveResponse.query_plan as any)?.source;
       
       // Log fallback usage for debugging
-      if (planSource && planSource !== 'gemma') {
+      if (planSource && planSource !== 'gemma' && planSource !== 'nemotron') {
         const plannerReason = String(
           liveResponse.plan_error ??
             (liveResponse.query_plan as any)?.reason ??

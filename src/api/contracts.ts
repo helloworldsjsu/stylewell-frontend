@@ -112,7 +112,7 @@ export interface ScraperQueryPlan {
     global_count?: number;
     preferred?: boolean;
   }>;
-  source?: 'gemma' | 'fallback';
+  source?: 'gemma' | 'nemotron' | 'fallback';
   target_category?: 'topwear' | 'bottomwear' | 'both';
   style_direction?: string;
   occasion_bucket?: string;
@@ -156,7 +156,7 @@ export interface ScraperRecommendResponse {
     attempted_queries?: string[];
     attempted_url_count?: number;
   }>;
-  plan_source?: 'gemma' | 'fallback';
+  plan_source?: 'gemma' | 'nemotron' | 'fallback';
   plan_error?: string | null;
   scrape_error?: string | null;
 }

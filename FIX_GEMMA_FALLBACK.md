@@ -3,14 +3,14 @@
 ## Problem
 When requesting shopping suggestions, you see this error:
 ```
-Gemma planner was unavailable for this request. Recovered Kimi planner output from 
+Gemma planner was unavailable for this request. Recovered Nemotron planner output from 
 semi-structured response. Non-Gemma fallback products are hidden by policy.
 ```
 
 ## Root Cause
-1. Your backend tries to use **Kimi LLM** via NVIDIA API to generate shopping plans
+1. Your backend tries to use **Nemotron** via NVIDIA API to generate shopping plans
 2. **`NVIDIA_API_KEY` environment variable is not configured** on your HuggingFace Space
-3. Kimi inference fails → backend falls back to deterministic planner
+3. Nemotron inference fails → backend falls back to deterministic planner
 4. Old frontend code rejected fallback results entirely
 
 ## ✅ What I Fixed
@@ -31,7 +31,7 @@ semi-structured response. Non-Gemma fallback products are hidden by policy.
 ## 🚀 Next Steps (Choose One)
 
 ### **Option A: Set NVIDIA_API_KEY on HuggingFace (Recommended)**
-This enables the premium Kimi planner:
+This enables the premium Nemotron planner:
 
 1. Go to your HuggingFace Space settings
 2. Find "Repository secrets" section
@@ -83,7 +83,7 @@ Edit `src/api/client.ts` lines 141-161 and comment out the health check.
 ```
 User submits request
    ↓
-Backend tries Kimi LLM planning
+Backend tries Nemotron planning
    ├─ Success → query_plan.source = 'gemma' → Display products
    └─ Fails (no NVIDIA_API_KEY) → query_plan.source = 'fallback'
    ↓
@@ -100,9 +100,9 @@ Frontend detects fallback
 - Hard reload (Ctrl+Shift+R)
 - Check if Space redeployment completed
 
-**Want true Gemma planning?**
+**Want true model planning?**
 - Set `NVIDIA_API_KEY` environment variable
-- This uses actual Gemma/Kimi models for better results
+- This uses the configured Nemotron model for better results
 
 **Fallback results seem poor?**
 - Try more specific requests: "black comfortable office trousers"
@@ -116,7 +116,8 @@ Frontend detects fallback
 ## Questions?
 Check the backend logs for specific errors:
 ```
-Backend log pattern: "Live Kimi query planning was unavailable..."
+Backend log pattern: "Live Nemotron query planning was unavailable..."
 ```
 
 This tells you the fallback was triggered due to missing API keys or timeouts.
+
