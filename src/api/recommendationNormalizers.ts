@@ -1,7 +1,7 @@
 import type { ClothingItem, MatchingResponse, OccasionResponse, ScoredOutfit, ShoppingSuggestion } from '../types/wardrobe';
 import { inferWardrobeSlot } from '../lib/wardrobeSlots';
 
-export const MAX_RECOMMENDATIONS = 6;
+export const MAX_RECOMMENDATIONS = 9;
 
 function toNumber(value: unknown, fallback = 0): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
