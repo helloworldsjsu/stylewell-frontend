@@ -49,7 +49,8 @@ const EXAMPLE_PROMPTS: ExamplePrompt[] = [
     label: 'Gym shorts — black / grey / navy',
     prompt: 'Looking for gym shorts in black, grey, or navy with a lightweight breathable feel. Avoid loud prints.',
     urls: [
-      'https://www.zalando.co.uk/mens-sports/?q=gym+shorts+black+grey+navy+lightweight',
+      'https://www.zalando.co.uk/mens-clothing/?q=gym+shorts+black',
+      'https://www.zalando.co.uk/mens-clothing/?q=sports+shorts+grey+navy',
     ],
   },
   {
