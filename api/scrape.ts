@@ -14,6 +14,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'startUrls array is required' });
   }
 
+  const normalizedStartUrls = startUrls
+    .map((value: unknown) => {
+      if (typeof value === 'string') {
+        const url = value.trim();
+        return url ? { url } : null;
+      }
+      if (value && typeof value === 'object' && 'url' in value) {
+        const url = String((value as { url?: unknown }).url ?? '').trim();
+        return url ? { ...(value as Record<string, unknown>), url } : null;
+      }
+      return null;
+    })
+    .filter((value): value is { url: string } => Boolean(value));
+
+  if (normalizedStartUrls.length === 0) {
+    return res.status(400).json({ error: 'startUrls must contain at least one valid URL' });
+  }
+
   if (!APIFY_TOKEN) {
     return res.status(500).json({ error: 'APIFY_API_TOKEN not configured' });
   }
@@ -25,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          startUrls: startUrls,
+          startUrls: normalizedStartUrls,
           maxRequestRetries: 3,
           maxConcurrency: 4,
           maxResults: Number(maxResults),

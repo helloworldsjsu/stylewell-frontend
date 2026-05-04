@@ -70,7 +70,11 @@ async function scrapeViaServerless(startUrls: string[]): Promise<ScraperProductV
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body?.error || `Scrape request failed (${response.status})`);
+    const message = typeof body?.error === 'string' && body.error.trim().length > 0 ? body.error.trim() : '';
+    const detail = typeof body?.detail === 'string' && body.detail.trim().length > 0 ? body.detail.trim() : '';
+    const fallback = `Scrape request failed (${response.status})`;
+    const combined = message ? (detail ? `${message}: ${detail}` : message) : detail || fallback;
+    throw new Error(combined);
   }
   const data = await response.json();
   return Array.isArray(data.products) ? data.products : [];
