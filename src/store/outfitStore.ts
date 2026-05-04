@@ -61,7 +61,14 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
   lockedBottom: null,
   lockedOther: null,
 
-  setOccasion: (occasion) => set({ selectedOccasion: occasion }),
+  setOccasion: (occasion) =>
+    set((state) => {
+      const normalized = String(occasion ?? '').trim().toLowerCase();
+      if (normalized === 'wedding') {
+        return { selectedOccasion: occasion, lockedTop: null, lockedBottom: null };
+      }
+      return { selectedOccasion: occasion };
+    }),
   lockTop: (item) => set((state) => ({
     lockedTop: item,
     lockedOther: item ? null : state.lockedOther,
@@ -126,27 +133,36 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
     }
 
     const state = get();
+    const normalizedOccasion = String(state.selectedOccasion ?? '').trim().toLowerCase();
+    const isWedding = normalizedOccasion === 'wedding';
+    const lockedTopId = isWedding ? undefined : state.lockedTop?.id;
+    const lockedBottomId = isWedding ? undefined : state.lockedBottom?.id;
+    const lockedOtherId = state.lockedOther?.id;
     set({ isLoading: true, error: null, shoppingSuggestions: [] });
 
     outfitFetchPromise = (async () => {
       try {
-      const hasLockedSelection = Boolean(state.lockedTop?.id || state.lockedBottom?.id || state.lockedOther?.id);
-      const cacheCategory = resolveCacheCategory({
-        lockedTopId: state.lockedTop?.id,
-        lockedBottomId: state.lockedBottom?.id,
-        lockedOtherId: state.lockedOther?.id,
-      });
+      const hasLockedSelection = Boolean(lockedTopId || lockedBottomId || lockedOtherId);
+      const cacheCategory = isWedding
+        ? 'others'
+        : resolveCacheCategory({
+            lockedTopId,
+            lockedBottomId,
+            lockedOtherId,
+          });
       const lockSignature = buildLockSignature({
-        lockedTopId: state.lockedTop?.id,
-        lockedBottomId: state.lockedBottom?.id,
-        lockedOtherId: state.lockedOther?.id,
+        lockedTopId,
+        lockedBottomId,
+        lockedOtherId,
       });
 
       const wardrobeContext = await getMatchingWardrobeContext();
       const globalWardrobeHash = buildGlobalWardrobeHash(wardrobeContext.wardrobe);
       const categorySet: MatchingCacheCategory[] = hasLockedSelection
         ? [cacheCategory]
-        : ['topwear', 'bottomwear', 'others'];
+        : isWedding
+          ? ['others']
+          : ['topwear', 'bottomwear', 'others'];
 
       const cacheKeys = categorySet.map((category) => {
         const hash = hasLockedSelection
@@ -178,9 +194,9 @@ export const useOutfitStore = create<OutfitStore>((set, get) => ({
 
       const response = await fetchWardrobeOutfits({
         occasion: state.selectedOccasion ?? undefined,
-        locked_top_id: state.lockedTop?.id,
-        locked_bottom_id: state.lockedBottom?.id,
-        locked_other_id: state.lockedOther?.id,
+        locked_top_id: lockedTopId,
+        locked_bottom_id: lockedBottomId,
+        locked_other_id: lockedOtherId,
       }, {
         wardrobeContext,
         cacheCategory: hasLockedSelection ? cacheCategory : undefined,

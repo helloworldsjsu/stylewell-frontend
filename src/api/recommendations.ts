@@ -134,6 +134,10 @@ export async function getOccasionRecommendation(params: {
     });
 
     if (data.outfits.length === 0) {
+      const normalized = String(params.occasion ?? '').trim().toLowerCase();
+      if (normalized === 'wedding') {
+        throw new Error('Add at least one item in Others to generate wedding recommendations.');
+      }
       throw new Error('Add at least one top and one bottom to generate recommendations.');
     }
 

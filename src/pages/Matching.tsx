@@ -81,7 +81,11 @@ export function Matching() {
 
   const tops = wardrobe.filter((item) => getItemSlot(item) === 'topwear');
   const bottoms = wardrobe.filter((item) => getItemSlot(item) === 'bottomwear');
-  const canRecommend = Boolean(lockedOther) || (tops.length >= 1 && bottoms.length >= 1);
+  const others = wardrobe.filter((item) => getItemSlot(item) === 'others');
+  const isWedding = String(selectedOccasion ?? '').trim().toLowerCase() === 'wedding';
+  const canRecommend = isWedding
+    ? Boolean(lockedOther) || others.length >= 1
+    : Boolean(lockedOther) || (tops.length >= 1 && bottoms.length >= 1);
 
   const controls = (
     <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -172,7 +176,9 @@ export function Matching() {
 
           {!canRecommend && (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-600">
-              Add at least 1 top and 1 bottom to get pair recommendations, or lock an Others item for a standalone look.
+              {isWedding
+                ? 'Add at least 1 item in Others to get wedding recommendations.'
+                : 'Add at least 1 top and 1 bottom to get pair recommendations, or lock an Others item for a standalone look.'}
             </div>
           )}
 

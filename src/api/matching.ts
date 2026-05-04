@@ -123,6 +123,14 @@ function normalizedColor(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function normalizeOccasion(value?: string): string {
+  return String(value ?? 'casual').trim().toLowerCase();
+}
+
+function isWeddingOccasion(value?: string): boolean {
+  return normalizeOccasion(value) === 'wedding';
+}
+
 function isOccasionCompatible(itemOccasion: string | null | undefined, requestedOccasion: string): boolean {
   if (!itemOccasion || !requestedOccasion) return true;
 
@@ -393,19 +401,23 @@ export async function fetchWardrobeOutfits(params: {
   lockSignature?: string;
 }): Promise<MatchingResponse> {
   try {
+    const isWedding = isWeddingOccasion(params.occasion);
+    const lockedTopId = isWedding ? undefined : params.locked_top_id;
+    const lockedBottomId = isWedding ? undefined : params.locked_bottom_id;
+    const lockedOtherId = params.locked_other_id;
     const wardrobeContext = options?.wardrobeContext ?? await getMatchingWardrobeContext();
     const wardrobe = wardrobeContext.wardrobe;
 
     if (isLiveApiMode()) {
       // console.log('[fetchWardrobeOutfits] Using LIVE API mode');
-      const topSelected = params.locked_top_id
-        ? wardrobe.find((item) => item.id === params.locked_top_id) ?? null
+      const topSelected = lockedTopId
+        ? wardrobe.find((item) => item.id === lockedTopId) ?? null
         : null;
-      const bottomSelected = params.locked_bottom_id
-        ? wardrobe.find((item) => item.id === params.locked_bottom_id) ?? null
+      const bottomSelected = lockedBottomId
+        ? wardrobe.find((item) => item.id === lockedBottomId) ?? null
         : null;
-      const otherSelected = params.locked_other_id
-        ? wardrobe.find((item) => item.id === params.locked_other_id) ?? null
+      const otherSelected = lockedOtherId
+        ? wardrobe.find((item) => item.id === lockedOtherId) ?? null
         : null;
 
       const payload: RecommendOutfitsRequest = {
@@ -440,9 +452,9 @@ export async function fetchWardrobeOutfits(params: {
         // Continue to frontend scoring below
       } else {
         return normalizeMatchingResponse(liveResponse, {
-        lockedTopId: params.locked_top_id,
-        lockedBottomId: params.locked_bottom_id,
-        lockedOtherId: params.locked_other_id,
+        lockedTopId,
+        lockedBottomId,
+        lockedOtherId,
         occasion: params.occasion,
         lockedTopItem: topSelected
           ? {
@@ -477,11 +489,29 @@ export async function fetchWardrobeOutfits(params: {
     //   others: others.length,
     // });
 
-    const selectedTops = params.locked_top_id ? tops.filter((item) => item.id === params.locked_top_id) : tops;
-    const selectedBottoms = params.locked_bottom_id ? bottoms.filter((item) => item.id === params.locked_bottom_id) : bottoms;
-    const selectedOthers = params.locked_other_id
-      ? others.filter((item) => item.id === params.locked_other_id)
+    const selectedTops = lockedTopId ? tops.filter((item) => item.id === lockedTopId) : tops;
+    const selectedBottoms = lockedBottomId ? bottoms.filter((item) => item.id === lockedBottomId) : bottoms;
+    const selectedOthers = lockedOtherId
+      ? others.filter((item) => item.id === lockedOtherId)
       : others;
+
+    if (isWedding) {
+      const weddingOutfits = selectedOthers
+        .map((other) => standaloneOtherOutfit(other, params.occasion))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, MAX_RECOMMENDATIONS);
+
+      return normalizeMatchingResponse({
+        outfits: weddingOutfits,
+        total_combinations_checked: selectedOthers.length,
+        scenario: params.occasion ? 'occasion' : 'default',
+      }, {
+        lockedTopId,
+        lockedBottomId,
+        lockedOtherId,
+        occasion: params.occasion,
+      });
+    }
 
     if (selectedOthers.length > 0 && params.locked_other_id) {
       const standalone = selectedOthers
@@ -494,9 +524,9 @@ export async function fetchWardrobeOutfits(params: {
         total_combinations_checked: selectedOthers.length,
         scenario: params.occasion ? 'locked_other+occasion' : 'locked_other',
       }, {
-        lockedTopId: params.locked_top_id,
-        lockedBottomId: params.locked_bottom_id,
-        lockedOtherId: params.locked_other_id,
+        lockedTopId,
+        lockedBottomId,
+        lockedOtherId,
         occasion: params.occasion,
       });
     }
@@ -556,9 +586,9 @@ export async function fetchWardrobeOutfits(params: {
       total_combinations_checked: (selectedTops.length * selectedBottoms.length) + selectedOthers.length,
       scenario: params.locked_top_id && params.locked_bottom_id ? 'locked_top+locked_bottom' : 'default',
     }, {
-      lockedTopId: params.locked_top_id,
-      lockedBottomId: params.locked_bottom_id,
-      lockedOtherId: params.locked_other_id,
+      lockedTopId,
+      lockedBottomId,
+      lockedOtherId,
       occasion: params.occasion,
     });
   } catch (error) {
