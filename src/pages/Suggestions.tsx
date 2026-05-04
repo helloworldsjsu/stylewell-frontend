@@ -17,13 +17,63 @@ interface ScraperProductView {
   brand?: string;
 }
 
-const EXAMPLE_PROMPTS = [
-  'Need a formal office shirt in navy or charcoal with a structured fit and minimal styling. Avoid oversized cuts.',
-  'Looking for casual daily trousers in beige, olive, or black with a comfortable straight fit. Avoid ripped or distressed styles.',
-  'Need a party jacket for evening outings in black or charcoal with a smart polished look. Avoid hoodies.',
-  'Looking for gym shorts in black, grey, or navy with a lightweight breathable feel. Avoid loud prints.',
-  'Need a casual weekend polo in white, beige, or olive with a clean minimal style. Avoid athleisure-heavy designs.',
+interface ExamplePrompt {
+  label: string;
+  prompt: string;
+  urls: string[];
+}
+
+const EXAMPLE_PROMPTS: ExamplePrompt[] = [
+  {
+    label: 'Formal office shirt — navy / charcoal',
+    prompt: 'Need a formal office shirt in navy or charcoal with a structured fit and minimal styling. Avoid oversized cuts.',
+    urls: [
+      'https://www.zalando.co.uk/mens-clothing-shirts/?q=formal+office+shirt+navy+charcoal',
+    ],
+  },
+  {
+    label: 'Casual trousers — beige / olive / black',
+    prompt: 'Looking for casual daily trousers in beige, olive, or black with a comfortable straight fit. Avoid ripped or distressed styles.',
+    urls: [
+      'https://www.zalando.co.uk/mens-clothing/?q=casual+trousers+beige+olive+black+straight+fit',
+    ],
+  },
+  {
+    label: 'Party jacket — black / charcoal',
+    prompt: 'Need a party jacket for evening outings in black or charcoal with a smart polished look. Avoid hoodies.',
+    urls: [
+      'https://www.zalando.co.uk/mens-clothing/?q=party+jacket+black+charcoal+smart+polished',
+    ],
+  },
+  {
+    label: 'Gym shorts — black / grey / navy',
+    prompt: 'Looking for gym shorts in black, grey, or navy with a lightweight breathable feel. Avoid loud prints.',
+    urls: [
+      'https://www.zalando.co.uk/mens-sports/?q=gym+shorts+black+grey+navy+lightweight',
+    ],
+  },
+  {
+    label: 'Casual weekend polo — white / beige / olive',
+    prompt: 'Need a casual weekend polo in white, beige, or olive with a clean minimal style. Avoid athleisure-heavy designs.',
+    urls: [
+      'https://www.zalando.co.uk/mens-clothing/?q=casual+polo+shirt+white+beige+olive+minimal',
+    ],
+  },
 ];
+
+async function scrapeViaServerless(startUrls: string[]): Promise<ScraperProductView[]> {
+  const response = await fetch('/api/scrape', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startUrls, maxResults: 50 }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body?.error || `Scrape request failed (${response.status})`);
+  }
+  const data = await response.json();
+  return Array.isArray(data.products) ? data.products : [];
+}
 
 export function Suggestions() {
   const [requestText, setRequestText] = useState('');
@@ -62,6 +112,28 @@ export function Suggestions() {
 
     loadWardrobe();
   }, []);
+
+  const handleExampleClick = async (example: ExamplePrompt) => {
+    setRequestText(example.prompt);
+    setLoading(true);
+    setError(null);
+    setNotice(null);
+    setScraperUrls(example.urls);
+    setScraperProducts([]);
+
+    try {
+      const products = await scrapeViaServerless(example.urls);
+      setScraperProducts(products);
+      if (products.length === 0) {
+        setNotice('Scraping completed but returned no products for this query.');
+      }
+    } catch (requestError: unknown) {
+      const message = requestError instanceof Error ? requestError.message : 'Failed to scrape products';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGenerate = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -177,12 +249,13 @@ export function Suggestions() {
             <div className="flex flex-wrap gap-2">
               {EXAMPLE_PROMPTS.map((example) => (
                 <button
-                  key={example}
+                  key={example.label}
                   type="button"
-                  onClick={() => setRequestText(example)}
-                  className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-slate-400"
+                  disabled={loading}
+                  onClick={() => handleExampleClick(example)}
+                  className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-slate-400 disabled:opacity-50"
                 >
-                  {example}
+                  {example.label}
                 </button>
               ))}
             </div>
@@ -205,7 +278,7 @@ export function Suggestions() {
       {loading && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-14">
           <Loader2 className="mb-4 h-10 w-10 animate-spin text-slate-700" />
-          <p className="text-sm text-slate-600">The model is extracting intent and generating a store for you...</p>
+          <p className="text-sm text-slate-600">Scraping products from Zalando...</p>
         </div>
       )}
 
