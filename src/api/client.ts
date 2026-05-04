@@ -46,6 +46,7 @@ function normalizeRenderableImageUrl(value: unknown): string {
 function normalizeScraperProduct(raw: any) {
   return {
     name: String(raw?.name ?? raw?.title ?? 'Suggested Product'),
+    brand: String(raw?.brand ?? raw?.brandName ?? ''),
     item_link: String(raw?.item_link ?? raw?.url ?? raw?.link ?? '#'),
     price: String(raw?.price ?? 'N/A'),
     image_url: normalizeRenderableImageUrl(raw?.image_url ?? raw?.imageUrl ?? raw?.image),
