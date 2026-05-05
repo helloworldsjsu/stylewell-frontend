@@ -4,6 +4,7 @@ import { Layers3, Upload, Sparkles, TrendingUp } from 'lucide-react';
 import { useWardrobeStore } from '../store/wardrobeStore';
 import { getWardrobeItems } from '../api/client';
 import { getItemSlot } from '../lib/wardrobeSlots';
+import { OutfitCarousel } from '../components/OutfitCarousel';
 
 export function Dashboard() {
   const { items, setItems } = useWardrobeStore();
@@ -147,6 +148,8 @@ export function Dashboard() {
           </Link>
         </div>
       </div>
+
+      <OutfitCarousel />
     </div>
   );
 }
