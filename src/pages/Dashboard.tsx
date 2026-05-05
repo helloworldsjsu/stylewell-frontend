@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Layers3, Upload, Sparkles, TrendingUp } from 'lucide-react';
 import { useWardrobeStore } from '../store/wardrobeStore';
 import { getWardrobeItems } from '../api/client';
@@ -7,6 +7,7 @@ import { getItemSlot } from '../lib/wardrobeSlots';
 import { OutfitCarousel } from '../components/OutfitCarousel';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { items, setItems } = useWardrobeStore();
   const [stats, setStats] = useState({
     totalItems: 0,
@@ -149,7 +150,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <OutfitCarousel />
+      <OutfitCarousel onOutfitClick={() => navigate('/matching')} />
     </div>
   );
 }
