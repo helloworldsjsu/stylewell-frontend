@@ -64,41 +64,53 @@ export function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+        <Link
+          to="/wardrobe"
+          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transition-transform hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-600"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Total Items</h3>
             <TrendingUp className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-4xl font-bold">{stats.totalItems}</p>
           <p className="text-blue-100 text-sm mt-2">Items in your wardrobe</p>
-        </div>
+        </Link>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+        <Link
+          to="/wardrobe?filter=topwear"
+          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transition-transform hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-green-600"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Topwear</h3>
             <Upload className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-4xl font-bold">{stats.topwear}</p>
           <p className="text-green-100 text-sm mt-2">Shirts, jackets, and more</p>
-        </div>
+        </Link>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+        <Link
+          to="/wardrobe?filter=bottomwear"
+          className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white transition-transform hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-orange-600"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Bottomwear</h3>
             <Sparkles className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-4xl font-bold">{stats.bottomwear}</p>
           <p className="text-orange-100 text-sm mt-2">Jeans, shorts, and more</p>
-        </div>
+        </Link>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <Link
+          to="/wardrobe?filter=others"
+          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white transition-transform hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-purple-600"
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Others</h3>
             <Layers3 className="w-8 h-8 opacity-80" />
           </div>
           <p className="text-4xl font-bold">{stats.others}</p>
           <p className="text-purple-100 text-sm mt-2">Footwear, bags, accessories, and more</p>
-        </div>
+        </Link>
       </div>
 
       <div>

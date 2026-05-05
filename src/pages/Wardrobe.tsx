@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Loader2 } from 'lucide-react';
 import { ClothingCard } from '../components/ClothingCard';
 import { UploadModal } from '../components/UploadModal';
@@ -16,10 +17,22 @@ export function Wardrobe() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | WardrobeSlot>('all');
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     loadItems();
   }, []);
+
+  useEffect(() => {
+    const filterParam = searchParams.get('filter');
+    const nextFilter =
+      filterParam === 'topwear' || filterParam === 'bottomwear' || filterParam === 'others'
+        ? filterParam
+        : 'all';
+    if (nextFilter !== filter) {
+      setFilter(nextFilter);
+    }
+  }, [searchParams, filter]);
 
   const loadItems = async () => {
     try {
